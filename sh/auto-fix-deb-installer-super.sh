@@ -25,13 +25,6 @@ BACKUP_DIR="/var/backups/installer_backup_$(date +%Y%m%d%H%M%S)"
 
 echo -e "\n✨ 進入安全升級修復模式 "
 
-# 建立臨時目錄與備份目錄
-mkdir -p "$TMPDIR"
-mkdir -p "$BACKUP_DIR"
-
-echo "📝 正在備份系統文件到 $BACKUP_DIR ..."
-rsync -a --exclude="$TMPDIR" / "$BACKUP_DIR/" || { echo "❌ 備份失敗，請先確認系統狀態"; exit 1; }
-
 #  確保 rsync 已經安裝
 if ! command -v rsync &> /dev/null; then
   echo "🔧 未偵測到 rsync，正在安裝..."
@@ -39,6 +32,12 @@ if ! command -v rsync &> /dev/null; then
 else
   echo "✅ rsync 已安裝"
 fi
+# 建立臨時目錄與備份目錄
+mkdir -p "$TMPDIR"
+mkdir -p "$BACKUP_DIR"
+
+echo "📝 正在備份系統文件到 $BACKUP_DIR ..."
+rsync -a --exclude="$TMPDIR" / "$BACKUP_DIR/" || { echo "❌ 備份失敗，請先確認系統狀態"; exit 1; }
 
 #  防止 bzip2 被升級壞掉，將 bzip2 標記為 hold
 echo "📌 將 bzip2 標記為 hold (防止升級) ..."
