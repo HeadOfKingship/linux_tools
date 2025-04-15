@@ -14,6 +14,12 @@
 # ❗ 請確保 /tmp 有足夠空間
 
 
+
+
+
+
+
+
 set -e
 
 CACHE_DIR="/var/cache/apt/archives"
