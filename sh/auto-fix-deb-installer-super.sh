@@ -23,7 +23,7 @@ TMPDIR="/tmp/safe-install-temp"
 LOG="$TMPDIR/error.log"
 BACKUP_DIR="/var/backups/installer_backup_$(date +%Y%m%d%H%M%S)"
 
-echo -e "\n✨ 進入安全升級修復模式 ♡"
+echo -e "\n✨ 進入安全升級修復模式 "
 
 # 建立臨時目錄與備份目錄
 mkdir -p "$TMPDIR"
@@ -104,5 +104,5 @@ else
   echo "📦 暫存資料保留在 $TMPDIR"
 fi
 
-echo -e "\n🎉 所有修復任務完成啦♡ 謝謝使用修復工具！"
+echo -e "\n🎉 所有修復任務完成啦 ！"
 
