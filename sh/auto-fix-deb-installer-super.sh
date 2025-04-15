@@ -26,6 +26,10 @@ echo -e "\n✨ 進入 自動修復模式 "
 echo -e "\n🔧 執行 dpkg --configure -a ..."
 dpkg --configure -a || echo "⚠️ dpkg 配置修復未完全成功"
 
+# 嘗試修復損壞依賴
+echo -e "\n🔧 執行 apt --fix-broken install..."
+apt --fix-broken install -y || echo "⚠️ fix-broken 沒有完全成功"
+
 #  確保 rsync 已安裝
 if ! command -v rsync &> /dev/null; then
   echo "🔧 未偵測到 rsync，正在安裝..."
@@ -38,9 +42,6 @@ fi
 echo "📌 bzip2 將被標記為 hold（防止升級）..."
 apt-mark hold bzip2 || true
 
-# 嘗試修復損壞依賴
-echo -e "\n🔧 執行 apt --fix-broken install..."
-apt --fix-broken install -y || echo "⚠️ fix-broken 沒有完全成功"
 
 #   掃描 .deb 套件
 echo -e "\n🔍 掃描 $CACHE_DIR 中的 .deb 套件...\n"
