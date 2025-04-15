@@ -1,55 +1,60 @@
 #!/bin/bash
 #
-# 💡 fix-deb-safe-installer.sh
 # 🛠️ 自動修復 apt 套件損壞與安裝失敗情況（支援手動解包）
 #
 # 🌟 使用方式：
 #   1. sudo chmod +x fix-deb-safe-installer.sh
 #   2. sudo ./fix-deb-safe-installer.sh
 #
-# ✅ 先跑 apt --fix-broken install 修理套件關聯
-# ✅ 嘗試安裝 .deb 套件，失敗則自動解包並手動複製
-# ✅ 避開 hard link 問題，例如 bzcat 等錯誤
-# 🌟適用於 各種精簡版Debian/ubuntu 等環境,
-#
-
-
-
-
-
+# 🌟適用於 各種精簡版Debian/ubuntu 無法 dpkg 安裝、bzip2 壞掉等場景,
+# ✅ 套件來源：/var/cache/apt/archives/*.deb
+# ✅可選擇自動修復所有，支援 apt --fix-broken
 
 
 set -e
 
 CACHE_DIR="/var/cache/apt/archives"
 TMPDIR="/tmp/safe-install-temp"
+LOG="$TMPDIR/error.log"
 
-echo "🔧 第一步：嘗試修復 broken 套件依賴..."
-apt --fix-broken install -y || echo "⚠️ fix-broken 無法自動完成，進入手動修復流程"
+# 🛠️ 初始化
+mkdir -p "$TMPDIR"
+echo -e "\n✨ 進入自動修復模式 ♡"
 
-echo "🔍 掃描 $CACHE_DIR 中的 .deb 套件..."
+# ✨ 試試 apt 自動修復
+echo -e "\n🔧 正在執行 apt --fix-broken install..."
+apt --fix-broken install -y || echo "⚠️ fix-broken 無法修復全部錯誤"
+
+# 🔍 開始掃描 .deb 套件
+echo -e "\n🔍 掃描 $CACHE_DIR 中的 .deb 套件...\n"
 
 for DEB in "$CACHE_DIR"/*.deb; do
     echo "👉 嘗試安裝：$(basename "$DEB")"
-    
-    if dpkg -i "$DEB"; then
-        echo "✅ 正常安裝成功：$(basename "$DEB")"
-    else
-        echo "⚠️ 安裝失敗，使用手動解包修復：$(basename "$DEB")"
-        rm -rf "$TMPDIR"
-        mkdir -p "$TMPDIR"
 
-        if dpkg-deb -x "$DEB" "$TMPDIR"; then
-            rsync -a "$TMPDIR"/ /  # 更安全的替代 cp -a
-            echo "✅ 手動安裝成功：$(basename "$DEB")"
+    # 清空錯誤日誌
+    > "$LOG"
+
+    # 嘗試安裝並記錄錯誤
+    if dpkg -i "$DEB" 2> "$LOG"; then
+        echo "✅ 成功安裝：$(basename "$DEB")"
+    elif grep -qE "hard link.*Operation not permitted" "$LOG"; then
+        echo "⚠️ 偵測 hardlink 錯誤，執行手動解包修復..."
+
+        rm -rf "$TMPDIR/data"
+        mkdir -p "$TMPDIR/data"
+
+        if dpkg-deb -x "$DEB" "$TMPDIR/data"; then
+            rsync -a "$TMPDIR/data"/ / || echo "❌ rsync 遇到錯誤"
+            echo "✅ 手動解包修復完成：$(basename "$DEB")"
         else
             echo "❌ 解包失敗：$(basename "$DEB")，跳過"
         fi
+    else
+        echo "❌ 無法自動修復：$(basename "$DEB")"
+        echo "💡 錯誤摘要如下："
+        cat "$LOG"
     fi
-    echo "---------------------------"
+    echo "-------------------------------"
 done
 
-echo "✨ 再次嘗試 apt --fix-broken install 檢查依賴..."
-apt --fix-broken install -y || echo "⚠️ 某些問題可能仍需要手動處理"
-
-echo "🌸 完成所有修復任務 ♡"
+echo -e "\n🌸 所有自動修復流程已完成 ♡"
